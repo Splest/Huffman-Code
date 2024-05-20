@@ -1,0 +1,211 @@
+#include <iostream>
+#include <vector>
+#include <list>
+#include <map>
+#include <Windows.h>
+#include <fstream>
+#include <iomanip>
+#include <string>
+#include <cmath>
+using namespace std;
+
+map <char, int> Data;
+class Node
+{
+public:
+	int a;
+	char c;
+	Node* left, * right;
+	Node() {};
+	Node(Node* L, Node* R)
+	{
+		left = L;
+		right = R;
+		a = L->a + R->a;
+	};
+
+};
+
+struct MyCompare
+{
+	bool operator()(const Node* l, const Node* r) const { return l->a < r->a; }
+};
+
+void print(Node* root, unsigned int k = 0)
+{
+	if (root != NULL)
+	{
+		print(root->left, k + 3);
+		for (int i = 0;i < k;i++)
+		{
+			cout << "   " ;
+		}
+		if (k != 0)
+		{
+			cout << k / 3 << " ";
+		}
+		
+		if (root->c)
+		{
+			cout << root->a << " (" << root->c << ")" << endl;
+		}
+		else
+		{
+			cout << root->a << endl;
+		}
+		print(root->right, k + 3);
+	}
+}
+string code ="";
+map<char, string> CharCodes;
+
+void BuildTable(Node* root)
+{
+	if (root->left != NULL)
+	{
+		code += "0";
+		BuildTable(root->left);
+	}
+
+	if (root->right != NULL)
+	{
+		code += "1";
+		BuildTable(root->right);
+	}
+
+	if (root->left == NULL && root->right == NULL)
+	{
+		CharCodes[root->c] = code;
+	}
+	if (code.length() != 0)
+	{
+		code.pop_back();
+	}
+	
+}
+void CharCodesTable(map<char, string > tab)
+{
+	for (auto it = tab.begin();it != tab.end();it++)
+	{
+		cout << it->first << ": ";
+		for (int i = 0; i < it->second.size();i++)
+		{
+			cout << it->second[i];
+		}
+		cout << endl;
+	}
+}
+void getText()
+{
+	string text = "";
+	string s;
+	ifstream ftext;
+	ftext.open("dataHuffman.txt");
+	if (ftext.is_open())
+	{
+		for (int i = 0;i < 49;i++)
+		{
+
+			string x1,x2;
+			getline(ftext, x1);
+			getline(ftext, x2);
+			Data[x1[0]] = stoi(x2);
+		}
+
+	}
+	else
+	{
+		cout << "файл не открыт" << endl;
+	}
+
+}
+
+string Decoder(map<string, char>CharCodesReverse, string testCoded)
+{
+	 //привет мир.
+	string testDecoded = "";
+	string Chr = "";
+	for (int i = 0; i < testCoded.length();i++)
+	{
+		Chr += testCoded[i];
+		if (CharCodesReverse.find(Chr) != CharCodesReverse.end())
+		{
+			testDecoded += CharCodesReverse[Chr];
+			Chr = "";
+		}
+	}
+	return testDecoded;
+}
+
+
+map<string, char> MapReverse(map<char, string>m1)
+{
+	map<string, char> m2;
+	for (auto it = m1.begin();it != m1.end();it++)
+	{
+		m2[it->second] = it->first;
+	}
+	return m2;
+}
+
+int main()
+{
+	SetConsoleOutputCP(1251);
+	setlocale(LC_NUMERIC, "POSIX");
+	system("mode con cols=800 lines=250");
+	getText();
+	list<Node*> t;
+	for (map<char, int>::iterator itr = Data.begin(); itr != Data.end(); ++itr)
+	{
+		Node* p = new Node;
+		p->c = itr->first;
+		p->a = itr->second;
+		t.push_back(p);
+	}
+
+	while (t.size() != 1)
+	{
+		t.sort(MyCompare());
+
+		Node* SonL = t.front();
+		t.pop_front();
+		Node* SonR = t.front();
+		t.pop_front();
+
+		Node* parent = new Node(SonL, SonR);
+		t.push_back(parent);
+
+	} 
+	Node* root = t.front();
+
+
+	BuildTable(root);
+	CharCodesTable(CharCodes);
+
+
+
+
+	float sumEnt = 0;
+	for (auto it = Data.begin();it != Data.end();it++)
+	{
+		sumEnt += double(it->second) / double(741985) * log2(double(it->second) / double(741985));
+	}
+	sumEnt *= -1;
+	cout << "Энтропия: " << sumEnt << endl;
+
+	float AvgBit = 0;
+	for (auto it = CharCodes.begin();it != CharCodes.end();it++)
+	{
+		AvgBit += it->second.length() * (double(Data[it->first]) / double(741985));
+	}
+	cout << "Среднее количество битов на символ: " << AvgBit << endl;
+
+
+	map<string, char>CharCodesReverse = MapReverse(CharCodes);
+	string testCoded = "1111111011101101011010010011110001000110101111000111";  // привет мир.
+	cout << "Закодированное сообщение: " << testCoded << endl;
+	cout << "Декодированное сообщение: " << Decoder(CharCodesReverse, testCoded) << endl;
+
+	print(root);
+	system("pause");
+}
