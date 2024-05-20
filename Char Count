@@ -1,0 +1,151 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <cstring>
+#include <algorithm>
+#include <set>
+#include <cmath>
+#include <iomanip>
+using namespace std;
+
+string getText()
+{
+	string text = "";
+	string s;
+	ifstream ftext;
+	ftext.open("MnM.txt");
+	if (ftext.is_open())
+	{
+		s = ftext.get();
+		while (ftext.eof() == 0)
+		{
+			text += s;
+			s = ftext.get();
+		}
+	}
+	else
+	{
+		cout << "файл не открыт" << endl;
+	}
+	return text;
+}
+vector<char> init_alph()
+{
+	vector <char> alphabet(49);
+	for (int i = 0;i <= 9;i++)
+	{
+		alphabet[i] = char(i+48);
+	}
+	for (int i = 10;i < 42;i++)
+	{
+
+		alphabet[i] = char(i - 42);
+		
+	}
+	alphabet[42] = '.';
+	alphabet[43] = ',';
+	alphabet[44] = ':';
+	alphabet[45] = ';';
+	alphabet[46] = '–';
+	alphabet[47] = ' ';
+	alphabet[48] = '"';
+	return alphabet;
+}
+void dataHuffman(vector<char> alphabet,vector<int> CharCount)
+{
+	ofstream data;
+	data.open("dataHuffman2.txt");
+	if (data.is_open())
+	{
+
+		for (int i = 0; i < 49;i++)
+		{
+			data << i <<";";
+			data << CharCount[i] << endl;
+		}
+	}
+	else
+	{
+		cout << "файл для записи не открыт" << endl;
+	}
+}
+
+void dataShennon(vector<char> alphabet, vector<float> Prob,vector <float> Entr)
+{
+	ofstream data;
+	data.open("dataShennon.txt");
+	if (data.is_open())
+	{
+
+		for (int i = 0; i < 49;i++)
+		{
+			data << alphabet[i] << endl;
+			data << Prob[i] << endl;
+			data << Entr[i] << endl;
+		}
+	}
+	else
+	{
+		cout << "файл для записи не открыт" << endl;
+	}
+}
+int main()
+{	
+	setlocale(0, "");
+	string text = getText();
+	set <char> ff;
+	vector<int> CharCount(49);
+	vector<float> Proabilities(49);
+	vector<char> alphabet(49);
+	vector<float> entropy(49);
+	alphabet = init_alph();
+	
+	for (int i = 0;i < text.length();i++)
+	{
+		for (int j = 0;j < 49;j++)
+		{
+			if (alphabet[j]==text[i])
+			{
+				CharCount[j]++;
+			}
+		}
+	}
+	int sum = 0;
+	for (int i = 0; i < 49;i++)
+	{
+		sum = sum + CharCount[i];
+	}
+	double FullP = 0;
+	float Iavg = 0;
+	for (int i = 0; i < 49;i++)
+	{
+		Proabilities[i] = double(CharCount[i]) / double(sum);
+		entropy[i] = log2(1/Proabilities[i]);
+		Iavg += CharCount[i] * entropy[i];
+		FullP += Proabilities[i];
+	}
+	Iavg /= sum;
+	
+	cout << "-----------------------------------------------------------------------" << endl;
+	cout << "|  № " << " |Символ" << " |Код символа" << " |Кол-во вхождений" << " |Вероятность" << " | Энтропия  |" << endl;
+	for (int i = 0;i < 49;i++)
+	{
+		cout << "| ";
+		cout << setfill(' ') << setw(2) << i  << "  |";
+		cout << setfill(' ') << setw(5) << alphabet[i] << "  |";
+		cout << setfill(' ') << setw(4) << int(alphabet[i]) << "        |";
+		cout << setfill(' ') << setw(6) << CharCount[i] << "           |";
+		cout << setfill(' ') << setw(8) << fixed << Proabilities[i] << "    |";
+		cout << setfill(' ') << setw(10) << entropy[i] << " |";
+		cout << endl; 
+		/**/
+	}
+	cout << "-----------------------------------------------------------------------" << endl;
+	cout << "Всего символов: " << sum << endl;
+	cout << "Полная энтропия: " << FullP << endl;
+	cout << "Iср: " << Iavg << " бит"<< endl;
+	dataHuffman(alphabet, CharCount);
+	dataShennon(alphabet, Proabilities, entropy);
+	
+	system("pause");
+}
