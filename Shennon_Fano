@@ -1,0 +1,200 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string>
+#include <Windows.h>
+#include <map>
+#include <iomanip>
+#include <algorithm>
+#include <cmath>
+#include <bitset>
+using namespace std;
+vector <char> Alphabet(49);
+vector <float> Probabilities(49);
+vector <float> Entropy(49);
+map <char, string> Code;
+
+
+
+pair<map<float, char>, map<float, char>> half(map<float, char>Prob)
+{
+	bool First = false;
+	map<float, char> Fhalf;
+	map<float, char> Shalf;
+	float sum = 0;
+	for (auto it = Prob.begin();it != Prob.end();it++)
+	{
+		sum += it->first;
+	}
+	float HalfSum = sum / 2;
+	sum = 0;
+	for (auto it = Prob.rbegin(); it != Prob.rend(); ++it)
+	{
+		sum += it->first;
+		if (sum <= HalfSum)
+		{
+			Fhalf[it->first] = it->second;
+		}
+		else if ((abs(HalfSum - sum) < abs(HalfSum - (sum - it->first))) && (First == false))
+		{
+			First = true;
+			Fhalf[it->first] = it->second;
+		}
+		else
+		{
+			Shalf[it->first] = it->second;
+		}
+	}
+	pair<map<float, char>, map<float, char>> halfs;
+	halfs.first = Fhalf;
+	halfs.second = Shalf;
+	return halfs;
+}
+
+
+
+void CodeAdd( map<float, char> part)
+{
+	pair < map<float, char>, map<float, char>> halfs = half(part);
+	for (auto it = halfs.first.begin(); it != halfs.first.end(); ++it)
+	{
+		Code[it->second] = Code[it->second] + "0";
+	}
+	for (auto it = halfs.second.begin(); it != halfs.second.end(); ++it)
+	{
+		Code[it->second] = Code[it->second] + "1";
+	}
+	if (halfs.first.size() > 1)
+	{
+		CodeAdd(halfs.first);
+	}
+	if (halfs.second.size() > 1)
+	{
+		CodeAdd(halfs.second);
+	}
+	if ((halfs.first.size() < 1) && (halfs.second.size() < 1))
+	{
+		return;
+	}
+}
+
+
+
+string getText()
+{
+	string text = "";
+	string s;
+	ifstream ftext;
+	ftext.open("dataShennon.txt");
+	if (ftext.is_open())
+	{
+		for (int i = 0;i < 49;i++)
+		{
+			string x;
+			getline(ftext, x);
+			Alphabet[i] = x[0];
+			getline(ftext, x);
+			Probabilities[i] = stof(x);
+			getline(ftext, x);
+			Entropy[i] = stof(x);
+		}
+	}
+	else
+	{
+		cout << "файл не открыт" << endl;
+	}
+	return text;
+} 
+
+map<char, float> MapReverseCF(map<float,char>m1)
+{
+	map<char, float> m2;
+	for (auto it = m1.begin();it != m1.end();it++)
+	{
+		m2[it->second] = it->first;
+	}
+	return m2;
+}
+map<string, char> MapReverseSC(map<char, string>m1)
+{
+	map<string, char> m2;
+	for (auto it = m1.begin();it != m1.end();it++)
+	{
+		m2[it->second] = it->first;
+	}
+	return m2;
+}
+
+
+string Decoder(map<string, char>CharCodesReverse, string testCoded)
+{
+	//привет мир.
+	string testDecoded = "";
+	string Chr = "";
+	for (int i = 0; i < testCoded.length();i++)
+	{
+		Chr += testCoded[i];
+		if (CharCodesReverse.find(Chr) != CharCodesReverse.end())
+		{
+			testDecoded += CharCodesReverse[Chr];
+			Chr = "";
+		}
+	}
+	return testDecoded;
+}
+
+int main()
+{
+	SetConsoleOutputCP(1251);
+	setlocale(LC_NUMERIC, "POSIX");
+	map <float, char> dataProb;
+	map <float, char> dataEntr;
+	pair<map<float, char>, map<float, char>> halfs;
+	string dataSTR = getText();
+
+	for (int i = 0; i < 49;i++)
+	{
+		dataProb[Probabilities[i]] = Alphabet[i];
+		dataEntr[Entropy[i]] = Alphabet[i];
+		Code[Alphabet[i]] = "";
+
+	}
+
+	CodeAdd(dataProb);
+
+
+
+	map<char, float> dataProbReverse = MapReverseCF(dataProb);
+	cout << "|Символ| Вероятность| Код" << endl;
+	for (auto it = Code.begin();it != Code.end();it++)
+	{
+		cout << fixed << "|" << it->first << "     |  " << dataProbReverse[it->first] << "  | " << it->second  << endl;
+	}
+
+
+
+	float sumEnt = 0;
+	for (int i = 0;i < 49;++i)
+	{
+		sumEnt += Probabilities[i] * log2(Probabilities[i]);
+	}
+	sumEnt *= -1;
+	cout <<"Энтропия: " << sumEnt << endl;
+
+
+	float avgBit = 0;
+	for (auto it = Code.begin();it != Code.end();it++)
+	{
+		avgBit += (it->second.length()*dataProbReverse[it->first]);
+	};
+	cout <<"Среднее количество битов на символ: " << avgBit << endl;
+
+	
+	string testCoded = "11011100010010111111001110111100101111110000011000010010001001001001110111"; // я люблю матлаб
+	string testDecoded = Decoder(MapReverseSC(Code), testCoded);
+	cout << "Закодированное сообщение: " << testCoded << endl;
+	cout <<"Декодированное сообщение: " << testDecoded << endl;
+
+
+	system("pause");
+}
